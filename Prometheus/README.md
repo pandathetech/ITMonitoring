@@ -12,193 +12,205 @@
 ---
 
 ## 1. Preparation
-Update all packages of your Prometheus server
+Update your system
 
 ```
 sudo apt update && sudo apt upgrade -y
 ```
 
-![]()
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Prometheus/Assets/Screenshot%202026-01-04%20140912.png)
 
-Create the `prometheus` user.
-
-```
-sudo useradd -s /sbin/nologin --system -g prometheus prometheus
-```
-
-![]()
-
-Check its existance by executing the following command:
+Create a `prometheus` user.
 
 ```
-cat /etc/passwd
+sudo useradd --no-create-home --shell /bin/false prometheus
 ```
 
-![]()
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Prometheus/Assets/Screenshot%202026-01-04%20141044.png)
 
-Create a repertory named `prometheus`.
+With the `cat /etc/passwd` command, you can check the creation of the prometheus user.
+
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Prometheus/Assets/Screenshot%202026-01-04%20141123.png)
+
+Create two directories (/etc/prometheus and /var/lib/prometheus).
 
 ```
-sudo mkdir /var/lib/Prometheus
-for i in rules rules.d files_sd; do sudo mkdir -p /etc/prometheus/${i}; done
+sudo mkdir /etc/prometheus
 ```
 
-![]()
+```
+sudo mkdir /var/lib/prometheus
+```
+
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Prometheus/Assets/Screenshot%202026-01-04%20141350.png)
 
 ---
 
 ## 2. Installation
+In the `/tmp` directory, download the latest version of Prometheus with the `wget` command.
 
-Download the latest version of Prometheus with the `wget` command.
+> In my case, it was 3.4.
 
 ```
-mkdir -p /tmp/prometheus
-cd /tmp/prometheus
-curl -s https://api.github.com/repos/prometheus/prometheus/releases/latest | grep browser_download_url | grep linux-amd64 | cut -d '"' -f 4 | wget -qi –
+cd /tmp
 ```
 
-![]()
-
-Extract the downloaded package file with the `tar` command.
 ```
-tar xvf prometheus*.tar.gz
+wget https://github.com/prometheus/prometheus/releases/download/v3.4.0/prometheus-3.4.0.linux-amd64.tar.gz
 ```
 
-![]()
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Prometheus/Assets/Screenshot%202026-01-04%20144348.png)
 
-Access the directory created as a result of the archive decompression.
+Extract the downloaded package file with the `tar` command. Then, access the directory created as a result of the archive decompression.
 
-*Check your folder for the downloaded and unzipped version of Prometheus.
+```
+tar xvf prometheus-3.4.0.linux-amd64.tar.gz
+```
+
+```
+cd prometheus-3.4.0.linux-amd64
+```
+
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Prometheus/Assets/Screenshot%202026-01-04%20144448.png)
+
+Move binaries and set permissions:
+
+```
+sudo mv prometheus promtool /usr/local/bin/
+```
+
+```
+sudo mv prometheus.yml /etc/prometheus/
+```
+
+```
+sudo chown -R prometheus:prometheus /usr/local/bin/prometheus /usr/local/bin/promtool /etc/prometheus /var/lib/prometheus
+```
+
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Prometheus/Assets/Screenshot%202026-01-04%20144554.png)
+
+---
+
+## 3. Configuration
+Create a file for Prometheus' systemd service in the `/etc/systemd/system/`.
+
+```
+sudo nano /etc/systemd/system/prometheus.service
+```
+
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Prometheus/Assets/Screenshot%202026-01-04%20144643.png)
+
+Paste the following contents in the file, then save and exit the file.
+
+```
+[Unit]
+Description=Prometheus
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=prometheus
+Group=prometheus
+Type=simple
+ExecStart=/usr/local/bin/prometheus \
+  --config.file /etc/prometheus/prometheus.yml \
+  --storage.tsdb.path /var/lib/prometheus/ \
+  --web.console.templates=/etc/prometheus/consoles \
+  --web.console.libraries=/etc/prometheus/console_libraries
+
+[Install]
+WantedBy=multi-user.target
+```
+
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Prometheus/Assets/Screenshot%202026-01-04%20144717.png)
+
+Prometheus' configuration file (`prometheus.yml`) can be found at the `/etc/prometheus/` directory.
+
+```
+cd /etc/prometheus/
+```
 
 ```
 ls
 ```
 
 ```
-cd /tmp/prometheus/prometheus-2.47.2.linux-amd64
+sudo vim prometheus.yml
 ```
 
-Move the Prometheus and Promtool files from the Prometheus folder to `/usr/local/bin`.
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Prometheus/Assets/Screenshot%202026-01-04%20145350.png)
+
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Prometheus/Assets/Screenshot%202026-01-04%20145452.png)
+
+After saving and exiting the file, you can reload the changes with the following command:
+
 ```
-sudo mv prometheus promtool /usr/local/bin/
+sudo systemctl reload prometheus
 ```
 
-![]()
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Prometheus/Assets/Screenshot%202026-01-04%20145514.png)
 
 ---
 
-## 3. Configuration
-Create a configuration file named `prometheus.yml` in this `/etc/prometheus` directory.
-```
-sudo mv prometheus.yml /etc/prometheus/prometheus.yml
-```
-
-```
-sudo mv consoles/ console_libraries/ /etc/prometheus/
-```
-
-```
-sudo nano /etc/prometheus/prometheus.yml
-```
-
-![]()
-
-View the contents of this last file.
-
-![]()
-
-### 3.1. Creation of the `Prometheus Systemd` service
-Create a file for Prometheus' systemd service.
-```
-sudo nano /etc/systemd/system/prometheus.service
-```
-
-![]()
-
-Insert the following content.
-```
-[Unit]
-Description=Prometheus
-Documentation=https://prometheus.io/docs/introduction/overview/
-Wants=network-online.target
-After=network-online.target
-
-[Service]
-Type=simple
-User=prometheus
-Group=prometheus
-ExecReload=/bin/kill -HUP \$MAINPID
-ExecStart=/usr/local/bin/prometheus \
---config.file=/etc/prometheus/prometheus.yml \
---storage.tsdb.path=/var/lib/prometheus \
---web.console.templates=/etc/prometheus/consoles \
---web.console.libraries=/etc/prometheus/console_libraries \
---web.listen-address=0.0.0.0:9090 \
---web.external-url=
-
-SyslogIdentifier=prometheus
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Change the ownership of these directories to the `prometheus` user and group previously created.
-```
-for i in rules rules.d files_sd; do sudo chown -R prometheus:prometheus /etc/prometheus/${i}; done
-for i in rules rules.d files_sd; do sudo chmod -R 775 /etc/prometheus/${i}; done
-sudo chown -R prometheus:prometheus /var/lib/prometheus/
-```
-
-![]()
-
+## 4. Enable and Start Prometheus
 Restart the `systemd` service.
+
 ```
 sudo systemctl daemon-reload
 ```
 
-Enable the `prometheus` service.
+Enable the Prometheus service on boot.
+
 ```
-sudo systemctl enable prometheus
+sudo systemctl enable --now prometheus
 ```
 
-![]()
+Check the status of the Prometheus service.
 
-### 3.2. Firewall Configuration
-Ensure your firewall is properly configured and allows traffic on ports `HTTPS (443)`, `HTTP (80)`, and `9090`. The Nginx web server presents itself as a ufw service.
+```
+sudo systemctl status prometheus
+```
+
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Prometheus/Assets/Screenshot%202026-01-04%20144827.png)
+
+---
+
+## 5. Firewall Configuration
+If your ufw firewall is enabled, allow port 9090 and reload your ufw firewall rules.
+
+> If it's not enabled, run the `sudo ufw enable` command.
 
 ```
 sudo ufw allow 9090/tcp
 ```
 
-![]()
+```
+sudo ufw reload
+```
+
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Prometheus/Assets/Screenshot%202026-01-04%20145010.png)
 
 ---
 
-## 4. Access to Web Interface
-Start up the Prometheus service.
-```
-sudo systemctl start prometheus
-```
+## 6. Access to Web Interface
+To access Prometheus' web interface, open a web browser and go to `http://<your_prometheus_ip_address>:9090`.
 
-Check its status to make sure it's `active (running)`.
-```
-sudo systemctl status prometheus
-```
+*Replace the `<your_prometheus_ip_address>` variable with the actual IP address.
 
-![]()
-
-In a web browser of your choice, enter the URL address `http://<your_prometheus_server_ip>:9090`.
-
-*Replace the `<your_prometheus_server_ip>` variable with the real value.
-
-You should see the Prometheus dashboard tab.
-
-![]()
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Prometheus/Assets/Screenshot%202026-01-04%20145200.png)
 
 ---
 
-## 5. References
+## 7. Execute a Query
+By entering and executing a query, you can monitor any metric you want of your monitored host.
+
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Prometheus/Assets/Screenshot%202026-01-04%20145644.png)
+
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Prometheus/Assets/Screenshot%202026-01-04%20145707.png)
+
+---
+
+## 8. References
 - [Prometheus - Official Website](https://prometheus.io/)
 - [CrownCloud Wiki - Install Prometheus on Ubuntu 22.04 Tutorial](https://wiki.crowncloud.net/How_to_Install_Lets_Encrypt_SSL_Certificate_with_Nginx_on_Ubuntu_20_04?How_to_Install_Prometheus_on_Ubuntu_22_04)
 - [CrownCloud Wiki - Configure Prometheus with Grafana](https://wiki.crowncloud.net/?How_to_Configure_Prometheus_Monitoring_Server_with_Grafana_on_Ubuntu_22_04)
