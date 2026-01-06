@@ -1,15 +1,18 @@
 # Grafana
-This guide provides step-by-step instructions to install **Grafana OSS (Open Source Edition)** on **Ubuntu 22.04 LTS**.
 
 ---
 
 ## Table of Contents
 - [1. Install Required Dependencies](#1-install-required-dependencies)
 - [2. Add Grafana APT Repository](#2-add-grafana-apt-repository)
-- [3. Install Grafana](3-install-grafana)
-- [4. Enable & Start Grafana](4-enable-&-start-grafana)
-- [5. Access Grafana Web Interface](5-access-grafana-web-interface)
-- [6. Resources](6-resources)
+- [3. Install Grafana](#3-install-grafana)
+- [4. Enable and Start Grafana](#4-enable-and-start-grafana)
+- [5. Grafana's Web Interface](#5-grafanas-web-interface)
+- [Data Sources](#data-sources)
+  - [Prometheus](#prometheus)
+- [Dashboards](#dashboards)
+  - [Prometheus](#prometheus)
+- [Resources](#resources)
 
 ---
 
@@ -68,7 +71,7 @@ sudo apt install grafana -y
 
 ---
 
-## 4. Enable & Start Grafana
+## 4. Enable and Start Grafana
 Enable Grafana to start on boot.
 
 ```
@@ -95,7 +98,7 @@ sudo systemctl status grafana-server
 
 ---
 
-## 5. Access Grafana Web Interface
+## 5. Grafana's Web Interface
 Open your web browser and visit.
 
 ```
@@ -121,5 +124,57 @@ Welcome to your Grafana default web page !
 
 ---
 
-## 6. Resources
+## Data Sources
+In the left-side menu, click on the `Connections` section. Click on `Add new connection`.
+
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Grafana/Assets/Screenshot%202026-01-05%20202601.png)
+
+Click on `Add data source`.
+
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Grafana/Assets/Screenshot%202026-01-05%20202724.png)
+
+### Prometheus
+Click on the `Prometheus` data source.
+
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Grafana/Assets/Screenshot%202026-01-05%20202756.png)
+
+Set your Prometheus server URL.
+
+> In my demonstration, I used `http://localhost:9090` because I installed Prometheus and Grafana locally in one VM (Ubuntu 22.04 Desktop). If they were installed in two different hosts, I would put my Prometheus server IP instead of `localhost`.
+
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Grafana/Assets/Screenshot%202026-01-05%20203159.png)
+
+Change the HTTP method from `POST` to `GET`, then click on `Save & Test` to test out the changes.
+
+> If successful, you should get a message stating that you'll have successfully queried the Prometheus API.
+
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Grafana/Assets/Screenshot%202026-01-05%20203309.png)
+
+## Dashboards
+In the left-side menu, click on the `Dashboards` section. Click on `Create dashboard`.
+
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Grafana/Assets/Screenshot%202026-01-05%20203420.png)
+
+Click on `Add visualization`.
+
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Grafana/Assets/Screenshot%202026-01-05%20203441.png)
+
+### Prometheus
+Select the Prometheus data source.
+
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Grafana/Assets/Screenshot%202026-01-05%20203513.png)
+
+Customize your dashboard.
+
+> In my demonstration, I randomly chose to monitor the `process_cpu_seconds_total` metric of my local demo VM, which has Prometheus installed.
+
+When you're done editing it, you can save your dashboard.
+
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Grafana/Assets/Screenshot%202026-01-05%20204703.png)
+
+![](https://github.com/pandathetech/ITMonitoring/blob/main/Grafana/Assets/Screenshot%202026-01-05%20204818.png)
+
+---
+
+## Resources
 - [Official Documentation](https://grafana.com/docs/grafana/latest/)
